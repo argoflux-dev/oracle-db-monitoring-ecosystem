@@ -3,6 +3,7 @@ import time
 from dotenv import load_dotenv
 import hvac
 import oracledb
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 
 load_dotenv()
 
