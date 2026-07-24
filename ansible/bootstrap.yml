@@ -1,0 +1,49 @@
+---
+- name: [BOOTSTRAP] Первичная настройка ОС и создание сервисного пользователя
+  hosts: vps
+  # Явно указываем заходить под oleg, у которого пока есть беспарольный sudo
+  vars:
+    ansible_user: oleg
+    ansible_ssh_private_key_file: "~/.ssh/MadMax2Quasar_ed"
+  become: true # Берем root через sudo oleg
+
+  tasks:
+    - name: 1. Установка Docker, Git и системных пакетов
+      apt:
+        name: [apt-transport-https, ca-certificates, curl, gnupg, lsb-release, git, docker-ce, docker-ce-cli, containerd.io, docker-compose-plugin]
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: 2. Создание изолированной группы ansible
+      group:
+        name: ansible
+        state: present
+
+    - name: 3. Создание сервисного пользователя ansible
+      user:
+        name: ansible
+        group: ansible
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: 4. Добавление вашего SSH-ключа для пользователя ansible
+      authorized_key:
+        user: ansible
+        state: present
+        # Ansible сам возьмет ваш локальный публичный ключ и пропишет его пользователю ansible на VPS
+        key: "{{ lookup('file', '~/.ssh/MadMax2Quasar_ed.pub') }}"
+
+    - name: 5. Ограничение прав sudo (разрешаем пользователю ansible ТОЛЬКО Докер)
+      copy:
+        content: "ansible ALL=(ALL) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose"
+        dest: /etc/sudoers.d/ansible
+        mode: '0440'
+
+    - name: 6. [ЛИКВИДАЦИЯ] Отзыв беспарольных прав sudo у пользователя oleg
+      # Мы просто удаляем файл из sudoers.d, который давал Олегу беспарольный доступ.
+      # Теперь oleg не сможет выполнять админские команды без ввода пароля ОС.
+      file:
+        path: /etc/sudoers.d/oleg
+        state: absent

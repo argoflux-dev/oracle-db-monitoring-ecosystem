@@ -1,0 +1,77 @@
+---
+# ЭТАП 1: Деплой контейнеров на VPS под урезанным пользователем
+- name: [DEPLOY] Обновление инфраструктуры мониторинга на VPS
+  hosts: vps
+  vars:
+    # Теперь деплой идет строго в пространство пользователя ansible
+    ansible_user: ansible
+    ansible_ssh_private_key_file: "~/.ssh/MadMax2Quasar_ed"
+    project_dir: "/home/ansible/github_projects/oracle-db-monitoring-ecosystem"
+    repo_url: "https://github.com/argoflux-dev/oracle-db-monitoring-ecosystem"
+  vars_files:
+    - credentials.yml
+
+  tasks:
+    - name: 1. Создание директории для проектов
+      file:
+        path: "/home/ansible/github_projects"
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0755'
+
+    - name: 2. Клонирование или обновление репозитория из GitHub
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ project_dir }}"
+        version: main
+        force: no
+
+    - name: 3. Запуск контейнеров через Docker Compose (Используем урезанный become)
+      become: true # ОС разрешит это действие, так как команда docker-compose прописана в sudoers для юзера ansible
+      command:
+        cmd: docker compose up -d
+        chdir: "{{ project_dir }}/infra-telemetry/"
+      environment:
+        VAULT_DEV_ROOT_TOKEN: "{{ vault_root_token }}"
+
+    - name: 4. Ожидание запуска Vault API
+      wait_for:
+        port: "{{ hostvars[inventory_hostname]['vault_port'] }}"
+        delay: 3
+        timeout: 30
+
+    - name: 5. Создание секретов для Oracle DB в Vault
+      uri:
+        url: "http://localhost:{{ hostvars[inventory_hostname]['vault_port'] }}/v1/secret/data/oracle"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            username: "{{ db_username }}"
+            password: "{{ db_password }}"
+            dsn: "{{ oracle_db_host }}:{{ oracle_db_port }}/{{ oracle_db_service_name }}"
+        status_code: [200, 204]
+
+# ЭТАП 2: Безопасный запуск агента на локальной ВМ
+- name: [AGENT] Запуск локального экспортера Oracle
+  hosts: localhost
+  become: false
+  vars_files:
+    - credentials.yml
+
+  tasks:
+    - name: Запуск main.py в оперативной памяти
+      shell: |
+        python3 ../agent-exporter/src/main.py
+      environment:
+        VAULT_TOKEN: "{{ vault_root_token }}"
+        # Берем IP из хоста vps-monitoring, но подключаемся под ansible
+        VAULT_ADDR: "http://{{ hostvars['vps-monitoring']['ansible_host'] }}:{{ hostvars['vps-monitoring']['vault_port'] }}"
+        ORACLE_DB_HOST: "{{ oracle_db_host }}"
+        ORACLE_DB_PORT: "{{ oracle_db_port }}"
+        ORACLE_DB_SERVICE_NAME: "{{ oracle_db_service_name }}"
+        PUSHGATEWAY_ADDR: "{{ hostvars['vps-monitoring']['ansible_host'] }}:9091"
