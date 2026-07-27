@@ -1,0 +1,70 @@
+---
+# ЭТАП 1: Деплой контейнеров на VPS под урезанным пользователем
+- name: Обновление инфраструктуры мониторинга на VPS
+  hosts: vps
+  vars:
+    # Теперь деплой идет строго в пространство пользователя ansible
+    ansible_user: ansible
+    ansible_ssh_private_key_file: "~/.ssh/MadMax2Quasar_ed"
+    project_dir: "/home/ansible/github_projects/oracle-db-monitoring-ecosystem"
+    repo_url: "https://github.com/argoflux-dev/oracle-db-monitoring-ecosystem"
+  #vars_files:
+  #  - credentials.yml
+
+  tasks:
+    - name: 1. Загрузка зашифрованных переменных
+      include_vars:
+        file: credentials.yml
+        name: vault_secrets
+
+    - name: 2. Установка переменных из vault_secrets
+      set_fact:
+        vault_root_token: "{{ vault_secrets.vault_root_token }}"
+        db_username: "{{ vault_secrets.db_username }}"
+        db_password: "{{ vault_secrets.db_password }}"
+        oracle_db_host: "{{ vault_secrets.oracle_db_host }}"
+        oracle_db_port: "{{ vault_secrets.oracle_db_port }}"
+        oracle_db_service_name: "{{ vault_secrets.oracle_db_service_name }}"
+
+    - name: 3. Создание директории для проектов
+      file:
+        path: "/home/ansible/github_projects"
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0755'
+
+    - name: 4. Клонирование или обновление репозитория из GitHub
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ project_dir }}"
+        version: main
+        force: no
+
+    - name: 5. Запуск контейнеров через Docker Compose (Используем урезанный become)
+      command:
+        cmd: docker compose up -d
+        chdir: "{{ project_dir }}/infra-telemetry/"
+      environment:
+        VAULT_DEV_ROOT_TOKEN: "{{ vault_root_token }}"
+
+    - name: 6. Ожидание запуска Vault API
+      wait_for:
+        port: "{{ hostvars[inventory_hostname]['vault_port'] }}"
+        delay: 3
+        timeout: 30
+
+    - name: 7. Создание секретов для Oracle DB в Vault
+      uri:
+        url: "http://localhost:{{ hostvars[inventory_hostname]['vault_port'] }}/v1/secret/data/oracle"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            username: "{{ db_username }}"
+            password: "{{ db_password }}"
+            dsn: "{{ oracle_db_host }}:{{ oracle_db_port }}/{{ oracle_db_service_name }}"
+        status_code: [200, 204]

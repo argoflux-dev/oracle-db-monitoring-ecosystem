@@ -1,0 +1,24 @@
+---
+- name: Запуск локального экспортера Oracle
+  hosts: localhost
+  become: false
+  vars_files:
+    - credentials.yml
+
+  tasks:
+    - name: 1. Вычисляем абсолютный путь к корню проекта
+      set_fact:
+        project_root: "{{ playbook_dir | dirname }}"
+
+    - name: 2. Запуск main.py в оперативной памяти в фоновом режиме
+      shell: "nohup {{ project_root }}/agent-exporter/venv/bin/python3 -u {{ project_root }}/agent-exporter/src/main.py > /tmp/agent_monitoring.log 2>&1 &"
+      async: 2592000
+      poll: 0
+      environment:
+        VAULT_TOKEN: "{{ vault_root_token }}"
+        # Вытаскиваем IP удаленной VPS и порт прямо из инвентаря
+        VAULT_ADDR: "http://{{ hostvars['vps-monitoring']['ansible_host'] }}:{{ hostvars['vps-monitoring']['vault_port'] }}"
+        ORACLE_DB_HOST: "{{ oracle_db_host }}"
+        ORACLE_DB_PORT: "{{ oracle_db_port }}"
+        ORACLE_DB_SERVICE_NAME: "{{ oracle_db_service_name }}"
+        PUSHGATEWAY_ADDR: "{{ hostvars['vps-monitoring']['ansible_host'] }}:9091"
