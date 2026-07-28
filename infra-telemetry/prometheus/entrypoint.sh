@@ -1,18 +1,18 @@
 #!/bin/sh
 set -e
 
-echo "=== Vault Entrypoint: Waiting for Vault to become available ==="
+echo "=== Vault Entrypoint: Waiting for Vault port to open ==="
 
-# Цикл ожидания, пока DNS имя vault и порт 8200 не станут доступны
-until wget -qO- http://vault:8200/v1/sys/health > /dev/null 2>&1; do
-    echo "Vault is unavailable or DNS is not ready yet - sleeping 2s..."
+# Проверяем доступность именно TCP-порта 8200 на хосте vault
+until nc -z vault 8200; do
+    echo "Vault port 8200 is closed or DNS is not ready yet - sleeping 2s..."
     sleep 2
 done
 
-echo "=== Vault is UP! Fetching Grafana Cloud Token ==="
+echo "=== Vault port is open! Fetching Grafana Cloud Token ==="
 
-# Запрашиваем JSON из Vault
-VAULT_RESPONSE=$(wget -qO- --header="X-Vault-Token: $VAULT_TOKEN" http://vault:8200/v1/secret/data/grafana)
+# Запрашиваем JSON из Vault (добавим флаг --no-check-certificate на всякий случай)
+VAULT_RESPONSE=$(wget -qO- --no-check-certificate --header="X-Vault-Token: $VAULT_TOKEN" http://vault:8200/v1/secret/data/grafana)
 
 # Парсинг JSON
 GRAFANA_CLOUD_TOKEN=$(echo "$VAULT_RESPONSE" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
