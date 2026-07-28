@@ -17,70 +17,51 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
+  "id": 5,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "collapsed": false,
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "title": "Oracle Active User Sessions",
-      "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "cftg8lwj0rev4f"
       },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "oracle_active_user_sessions",
-          "legendFormat": "Active Sessions",
-          "range": true,
-          "refId": "A"
-        }
-      ],
       "fieldConfig": {
         "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Sessions Count",
+            "axisPlacement": "auto",
             "barAlignment": 0,
-            "lineWidth": 2,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
             "fillOpacity": 15,
             "gradientMode": "opacity",
-            "showPoints": "auto",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
             "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
             },
-            "axisPlacement": "auto",
-            "axisLabel": "Sessions Count",
-            "axisColorMode": "text",
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
             "thresholdsStyle": {
               "mode": "off"
             }
-          },
-          "color": {
-            "mode": "palette-classic"
           },
           "mappings": [],
           "thresholds": {
@@ -96,23 +77,57 @@
         },
         "overrides": []
       },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
       "options": {
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        },
         "legend": {
-          "calcs": ["mean", "max", "last"],
+          "calcs": [
+            "mean",
+            "max",
+            "last"
+          ],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
         }
-      }
+      },
+      "pluginVersion": "11.5.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "oracle_active_user_sessions",
+          "legendFormat": "Active Sessions",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Oracle Active User Sessions",
+      "type": "timeseries"
     }
   ],
+  "preload": false,
   "refresh": "5s",
-  "schemaVersion": 39,
-  "tags": ["oracle"],
+  "schemaVersion": 40,
+  "tags": [
+    "oracle"
+  ],
+  "templating": {
+    "list": []
+  },
   "time": {
     "from": "now-1h",
     "to": "now"
@@ -127,5 +142,6 @@
   "timezone": "browser",
   "title": "Oracle DB Active Sessions",
   "uid": "oracle-db-live",
-  "version": 1
+  "version": 1,
+  "weekStart": ""
 }
