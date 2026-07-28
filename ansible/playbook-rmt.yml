@@ -37,6 +37,14 @@
         group: ansible
         mode: '0755'
 
+    - name: 3.5. Гарантированное создание вложенной папки prometheus от имени юзера ansible
+      file:
+        path: "/home/ansible/github_projects/oracle-db-monitoring-ecosystem/infra-telemetry/prometheus"
+        state: directory
+        owner: ansible
+        group: ansible
+        mode: '0755'
+
     - name: 4. Клонирование или обновление репозитория из GitHub
       git:
         repo: "{{ repo_url }}"
