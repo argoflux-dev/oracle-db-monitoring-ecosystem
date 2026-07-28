@@ -44,6 +44,14 @@
         version: main
         force: no
 
+    - name: 4.5. Генерация prometheus.yml из секретов Ansible Vault
+      template:
+        src: prometheus.yml.j2 # Лежит в папке ansible рядом с плейбуком
+        dest: "{{ project_dir }}/infra-telemetry/prometheus/prometheus.yml"
+        owner: ansible
+        group: ansible
+        mode: '0600'
+
     - name: 5. Запуск контейнеров через Docker Compose
       command:
         cmd: docker compose up -d --force-recreate

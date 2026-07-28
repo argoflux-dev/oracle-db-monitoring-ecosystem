@@ -8,7 +8,7 @@ scrape_configs:
       - targets: ['pushgateway:9091']
 
 remote_write:
-  - url: '${GRAFANA_CLOUD_URL}'
+  - url: '${grafana_cloud_url}'
     basic_auth:
-      username: '${GRAFANA_CLOUD_USER}'
-      password: '${GRAFANA_CLOUD_TOKEN}'
+      username: '${grafana_cloud_user}'
+      password: '${grafana_cloud_token}'
