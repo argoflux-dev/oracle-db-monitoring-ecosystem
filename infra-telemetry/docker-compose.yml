@@ -34,7 +34,7 @@ services:
     networks:
       - monitoring
 
-  prometheus:
+    prometheus:
     image: prom/prometheus:v3.1.0
     container_name: prometheus
     restart: unless-stopped
@@ -46,9 +46,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--config.expand-env'
-    environment:
-      - GRAFANA_CLOUD_TOKEN=${GRAFANA_CLOUD_TOKEN}
     networks:
       - monitoring
     depends_on:
