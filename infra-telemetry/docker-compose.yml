@@ -17,6 +17,11 @@ services:
       VAULT_ADDR: "http://0.0.0.0"
     cap_add:
       - IPC_LOCK
+    healthcheck:
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
     networks:
       - monitoring
 
@@ -49,8 +54,10 @@ services:
     networks:
       - monitoring
     depends_on:
-      - vault
-      - pushgateway
+      pushgateway:
+        condition: service_started
+      vault:
+        condition: service_healthy
 
   grafana:
     image: grafana/grafana:11.5.0
