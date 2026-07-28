@@ -26,7 +26,7 @@
         oracle_db_port: "{{ vault_secrets.oracle_db_port }}"
         oracle_db_service_name: "{{ vault_secrets.oracle_db_service_name }}"
         grafana_cloud_url: "{{ vault_secrets.grafana_cloud_url }}"
-        grafana_cloud_user: "{{ vault_secrets.grafana_clouuser }}"
+        grafana_cloud_user: "{{ vault_secrets.grafana_cloud_user }}"
         grafana_cloud_token: "{{ vault_secrets.grafana_cloud_token }}"
 
     - name: 3. Создание директории для проектов
