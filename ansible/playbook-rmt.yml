@@ -50,6 +50,7 @@
         chdir: "{{ project_dir }}/infra-telemetry/"
       environment:
         VAULT_DEV_ROOT_TOKEN: "{{ vault_root_token }}"
+        GRAFANA_CLOUD_TOKEN: "{{ grafana_cloud_token }}"
 
     - name: 6. Ожидание запуска Vault API
       wait_for:
