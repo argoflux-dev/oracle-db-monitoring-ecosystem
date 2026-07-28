@@ -6,3 +6,10 @@ scrape_configs:
     honor_labels: true  # Сохраняет оригинальные метки от Python-скрипта
     static_configs:
       - targets: ['pushgateway:9091']
+
+
+remote_write:
+  - url: '${GRAFANA_CLOUD_URL}'
+    basic_auth:
+      username: '${GRAFANA_CLOUD_USER}'
+      password: '${GRAFANA_CLOUD_TOKEN}'

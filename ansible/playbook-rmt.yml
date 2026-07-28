@@ -25,6 +25,9 @@
         oracle_db_host: "{{ vault_secrets.oracle_db_host }}"
         oracle_db_port: "{{ vault_secrets.oracle_db_port }}"
         oracle_db_service_name: "{{ vault_secrets.oracle_db_service_name }}"
+        grafana_cloud_url: "{{ vault_secrets.grafana_cloud_url }}"
+        grafana_cloud_user: "{{ vault_secrets.grafana_clouuser }}"
+        grafana_cloud_token: "{{ vault_secrets.grafana_cloud_token }}"
 
     - name: 3. Создание директории для проектов
       file:
@@ -41,9 +44,9 @@
         version: main
         force: no
 
-    - name: 5. Запуск контейнеров через Docker Compose (Используем урезанный become)
+    - name: 5. Запуск контейнеров через Docker Compose
       command:
-        cmd: docker compose up -d
+        cmd: docker compose up -d --force-recreate
         chdir: "{{ project_dir }}/infra-telemetry/"
       environment:
         VAULT_DEV_ROOT_TOKEN: "{{ vault_root_token }}"
@@ -67,4 +70,17 @@
             username: "{{ db_username }}"
             password: "{{ db_password }}"
             dsn: "{{ oracle_db_host }}:{{ oracle_db_port }}/{{ oracle_db_service_name }}"
+        status_code: [200, 204]
+      
+    - name: 8. Создание секретов для Grafana Cloud в Vault
+      uri:
+        url: "http://localhost:{{ hostvars[inventory_hostname]['vault_port'] }}/v1/secret/data/grafana"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            token: "{{ grafana_cloud_token }}"
         status_code: [200, 204]
