@@ -60,7 +60,7 @@
               "mode": "none"
             },
             "thresholdsStyle": {
-              "mode": "off"
+              "mode": "dashed+area"
             }
           },
           "mappings": [],
@@ -70,6 +70,10 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 300
               }
             ]
           },
@@ -142,6 +146,6 @@
   "timezone": "browser",
   "title": "Oracle DB Active Sessions",
   "uid": "oracle-db-live",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
