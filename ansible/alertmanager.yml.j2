@@ -1,25 +1,28 @@
 global:
   resolve_timeout: 5m
+  # Настройки SMTP-сервера
+  smtp_smarthost: 'smtp.mail.ru:465'
+  smtp_from: 'incleads@mail.ru'
+  smtp_auth_username: 'incleads@mail.ru'
+  smtp_auth_password: '{{ vault_secrets.smtp_password }}'
+  smtp_require_tls: true
 
 route:
   group_by: ['alertname']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
-  receiver: 'telegram-notifications'
+  receiver: 'email-alerts'
 
 receivers:
-- name: 'telegram-notifications'
-  telegram_configs:
-  - bot_token: '{{ tg_bot_token }}'
-    chat_id: {{ tg_chat_id }}
-    parse_mode: 'HTML'
-    message: |
-      {% raw %}{{ if eq .Status "firing" }}🚨 <b>[ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</b> {{ else }}✅ <b>[РЕШЕНО] {{ .CommonLabels.alertname }}</b>{{ end }}
-      <b>Важность:</b> <code>{{ .CommonLabels.severity }}</code>
-      
+- name: 'email-alerts'
+  email_configs:
+  - to: 'Oleg.workcorr@yandex.ru'
+    html: |
+      {% raw %}<h3>🚨 [ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</h3>
+      <b>Важность:</b> {{ .CommonLabels.severity }}<br><br>
       {{ range .Alerts }}
-      📌 <b>Суть:</b> {{ .Annotations.summary }}
-      📝 <b>Детали:</b> {{ .Annotations.description }}
-      ⏳ <b>Старт:</b> {{ .StartsAt.Format "15:04:05 02-01-2006" }}
+      📌 <b>Суть:</b> {{ .Annotations.summary }}<br>
+      📝 <b>Детали:</b> {{ .Annotations.description }}<br>
+      ⏳ <b>Старт:</b> {{ .StartsAt.Format "15:04:05 02-01-2006" }}<br>
       {{ end }}{% endraw %}

@@ -8,7 +8,7 @@ groups:
           severity: critical
         annotations:
           summary: "Критическая нагрузка на Oracle DB"
-          description: {% raw %}"Количество сессий: {{ $value }} (порог 50) держится > 2 минут."{% endraw %}
+          description: {% raw %}"Количество сессий: {{ $value }} (порог 300) держится > 30 секунд."{% endraw %}
 
       - alert: OracleAgentDead
         expr: time() - push_time_seconds{job="oracle_exporter"} > 30
