@@ -1,7 +1,7 @@
 global:
   resolve_timeout: 5m
   # Настройки SMTP-сервера
-  smtp_smarthost: 'smtp.mail.ru:465'
+  smtp_smarthost: 'smtp.mail.ru:587'
   smtp_from: 'incleads@mail.ru'
   smtp_auth_username: 'incleads@mail.ru'
   smtp_auth_password: '{{ vault_secrets.smtp_password }}'
