@@ -57,9 +57,9 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
+    # command:
+    #   - '--config.file=/etc/prometheus/prometheus.yml'
+    #   - '--storage.tsdb.path=/prometheus'
     networks:
       - monitoring
     depends_on:
