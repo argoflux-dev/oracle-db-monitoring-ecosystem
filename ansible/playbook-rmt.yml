@@ -2,14 +2,12 @@
 # ЭТАП 1: Деплой контейнеров на VPS под урезанным пользователем
 - name: Обновление инфраструктуры мониторинга на VPS
   hosts: vps
+  gather_facts: false
   vars:
-    # Теперь деплой идет строго в пространство пользователя ansible
     ansible_user: ansible
     ansible_ssh_private_key_file: "~/.ssh/MadMax2Quasar_ed"
     project_dir: "/home/ansible/github_projects/oracle-db-monitoring-ecosystem"
     repo_url: "https://github.com/argoflux-dev/oracle-db-monitoring-ecosystem"
-  #vars_files:
-  #  - credentials.yml
 
   tasks:
     - name: 1. Загрузка зашифрованных переменных
@@ -20,6 +18,7 @@
     - name: 2. Установка переменных из vault_secrets
       set_fact:
         vault_root_token: "{{ vault_secrets.vault_root_token }}"
+        vault_port: "{{ vault_secrets.vault_port | default(8200) }}"
         db_username: "{{ vault_secrets.db_username }}"
         db_password: "{{ vault_secrets.db_password }}"
         oracle_db_host: "{{ vault_secrets.oracle_db_host }}"
@@ -28,6 +27,8 @@
         grafana_cloud_url: "{{ vault_secrets.grafana_cloud_url }}"
         grafana_cloud_user: "{{ vault_secrets.grafana_cloud_user }}"
         grafana_cloud_token: "{{ vault_secrets.grafana_cloud_token }}"
+        tg_bot_token: "{{ vault_secrets.telegram_bot_token }}"
+        tg_chat_id: "{{ vault_secrets.telegram_chat_id }}"
 
     - name: 3. Создание директории для проектов
       file:
@@ -37,13 +38,16 @@
         group: ansible
         mode: '0755'
 
-    - name: 3.5. Гарантированное создание вложенной папки prometheus от имени юзера ansible
+    - name: 3.5. Гарантированное создание папок под конфиги прометея и алертменеджера
       file:
-        path: "/home/ansible/github_projects/oracle-db-monitoring-ecosystem/infra-telemetry/prometheus"
+        path: "{{ project_dir }}/infra-telemetry/{{ item }}"
         state: directory
         owner: ansible
         group: ansible
         mode: '0755'
+      loop:
+        - "prometheus"
+        - "alertmanager"
 
     - name: 4. Клонирование или обновление репозитория из GitHub
       git:
@@ -52,13 +56,24 @@
         version: main
         force: no
 
-    - name: 4.5. Генерация prometheus.yml из секретов Ansible Vault
+    - name: 4.5. Генерация prometheus.yml и файлов правил алертов
       template:
-        src: prometheus.yml.j2 # Лежит в папке ansible рядом с плейбуком
-        dest: "{{ project_dir }}/infra-telemetry/prometheus/prometheus.yml"
+        src: "{{ item.src }}"
+        dest: "{{ project_dir }}/infra-telemetry/prometheus/{{ item.dest }}"
         owner: ansible
         group: ansible
-        mode: '0600'
+        mode: '0644'
+      loop:
+        - { src: 'prometheus.yml.j2', dest: 'prometheus.yml' }
+        - { src: 'alert_rules.yml.j2', dest: 'alert_rules.yml' }
+
+    - name: 4.6. Генерация конфига alertmanager.yml (с подстановкой секретов из Ansible Vault)
+      template:
+        src: alertmanager.yml.j2
+        dest: "{{ project_dir }}/infra-telemetry/alertmanager/alertmanager.yml"
+        owner: ansible
+        group: ansible
+        mode: '0644'
 
     - name: 5. Запуск контейнеров через Docker Compose
       command:
@@ -70,13 +85,13 @@
 
     - name: 6. Ожидание запуска Vault API
       wait_for:
-        port: "{{ hostvars[inventory_hostname]['vault_port'] }}"
+        port: "{{ vault_port }}"
         delay: 3
         timeout: 30
 
     - name: 7. Создание секретов для Oracle DB в Vault
       uri:
-        url: "http://localhost:{{ hostvars[inventory_hostname]['vault_port'] }}/v1/secret/data/oracle"
+        url: "http://localhost:{{ vault_port }}/v1/secret/data/oracle"
         method: POST
         headers:
           X-Vault-Token: "{{ vault_root_token }}"
@@ -91,7 +106,7 @@
       
     - name: 8. Создание секретов для Grafana Cloud в Vault
       uri:
-        url: "http://localhost:{{ hostvars[inventory_hostname]['vault_port'] }}/v1/secret/data/grafana"
+        url: "http://localhost:{{ vault_port }}/v1/secret/data/grafana"
         method: POST
         headers:
           X-Vault-Token: "{{ vault_root_token }}"
@@ -100,4 +115,18 @@
         body:
           data:
             token: "{{ grafana_cloud_token }}"
+        status_code: [200, 204]
+
+    - name: 9. Безопасное сохранение секретов Telegram в Vault
+      uri:
+        url: "http://localhost:{{ vault_port }}/v1/secret/data/telegram"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          data:
+            bot_token: "{{ tg_bot_token }}"
+            chat_id: "{{ tg_chat_id }}"
         status_code: [200, 204]

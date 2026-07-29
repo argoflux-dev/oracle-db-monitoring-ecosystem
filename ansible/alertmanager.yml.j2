@@ -1,0 +1,25 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'telegram-notifications'
+
+receivers:
+- name: 'telegram-notifications'
+  telegram_configs:
+  - bot_token: '{{ tg_bot_token }}'
+    chat_id: {{ tg_chat_id }}
+    parse_mode: 'HTML'
+    message: |
+      {% raw %}{{ if eq .Status "firing" }}🚨 <b>[ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</b> {{ else }}✅ <b>[РЕШЕНО] {{ .CommonLabels.alertname }}</b>{{ end }}
+      <b>Важность:</b> <code>{{ .CommonLabels.severity }}</code>
+      
+      {{ range .Alerts }}
+      📌 <b>Суть:</b> {{ .Annotations.summary }}
+      📝 <b>Детали:</b> {{ .Annotations.description }}
+      ⏳ <b>Старт:</b> {{ .StartsAt.Format "15:04:05 02-01-2006" }}
+      {{ end }}{% endraw %}

@@ -92,7 +92,7 @@ def main():
     # Первый параметр - имя метрики в Prometheus, второй - её описание
     sessions_gauge = Gauge(
         'oracle_active_user_sessions', 
-        'Current number of active user sessions in Oracle DB',
+        'Number of sessions',
         registry=registry
     )
     
@@ -117,7 +117,7 @@ def main():
                 # job='oracle_exporter' — это ярлык, по которому Prometheus сгруппирует эти данные
                 try:
                     push_to_gateway(pushgateway_addr, job='oracle_exporter', registry=registry)
-                    print(f"[SUCCESS] Metrics successfully pushed to Pushgateway at {pushgateway_addr}")
+                    # print(f"[SUCCESS] Metrics successfully pushed to Pushgateway at {pushgateway_addr}")
                 except Exception as push_err:
                     print(f"[ERROR] Failed to push metrics to Pushgateway: {push_err}")
             
