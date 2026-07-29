@@ -62,6 +62,8 @@
       command:
         cmd: docker compose up -d --force-recreate
         chdir: "{{ project_dir }}/infra-telemetry/"
+      environment:
+        VAULT_DEV_ROOT_TOKEN: "{{ vault_root_token }}"
 
     - name: 8. Waiting for Vault API to start
       wait_for:
