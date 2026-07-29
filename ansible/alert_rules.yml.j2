@@ -3,18 +3,18 @@ groups:
     rules:
       - alert: OracleHighActiveSessions
         expr: oracle_active_user_sessions > 300
-        for: 30s
+        for: 15s
         labels:
           severity: critical
         annotations:
           summary: "Критическая нагрузка на Oracle DB"
-          description: {% raw %}"Количество сессий: {{ $value }} (порог 300) держится > 30 секунд."{% endraw %}
+          description: {% raw %}"Количество сессий: {{ $value }} держится > 30 секунд."{% endraw %}
 
       - alert: OracleAgentDead
         expr: time() - push_time_seconds{job="oracle_exporter"} > 30
         for: 1m
         labels:
-          severity: page
+          severity: critical
         annotations:
           summary: "Агент мониторинга Oracle отключился"
           description: "Pushgateway не получал обновлений от скрипта уже более 30 секунд."
