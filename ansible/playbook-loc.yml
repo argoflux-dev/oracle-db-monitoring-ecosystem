@@ -1,30 +1,29 @@
 ---
-- name: Запуск локального экспортера Oracle
+- name: Launching a local Oracle DB metrics exporter
   hosts: localhost
   become: false
   vars_files:
     - credentials.yml
 
   tasks:
-    - name: 1. Вычисляем абсолютный путь к корню проекта
+    - name: 1. Calculate the absolute path to the project root
       set_fact:
         project_root: "{{ playbook_dir | dirname }}"
 
-    - name: 2.1. Ищем запущенный процесс мониторинга (по имени файла)
-      # [m]ain.py защищает от нахождения самого себя в grep
+    - name: 2.1. We are looking for a running main.py process (agent-exporter)
       shell: "ps aux | grep '[m]ain.py' | awk '{print $2}'"
       register: running_processes
       failed_when: false
       changed_when: false
 
-    - name: 2.2. Завершаем процесс по PID
+    - name: 2.2. Terminate the process by PID
       ansible.builtin.shell: "kill -9 {{ item }}"
       loop: "{{ running_processes.stdout_lines }}"
       when: running_processes.stdout_lines | length > 0
       register: kill_result
       changed_when: kill_result.rc == 0
 
-    - name: 3. Запуск main.py в оперативной памяти в фоновом режиме
+    - name: 3. Run main.py in RAM in the background
       shell: "nohup {{ project_root }}/agent-exporter/venv/bin/python3 -u {{ project_root }}/agent-exporter/src/main.py > /tmp/agent_monitoring.log 2>&1 &"
       async: 2592000
       poll: 0
