@@ -10,15 +10,29 @@
       set_fact:
         project_root: "{{ playbook_dir | dirname }}"
 
-    - name: 2. Запуск main.py в оперативной памяти в фоновом режиме
+    - name: 2.1. Ищем запущенный процесс мониторинга (по имени файла)
+      # [m]ain.py защищает от нахождения самого себя в grep
+      shell: "ps aux | grep '[m]ain.py' | awk '{print $2}'"
+      register: running_processes
+      failed_when: false
+      changed_when: false
+
+    - name: 2.2. Завершаем процесс по PID
+      ansible.builtin.shell: "kill -9 {{ item }}"
+      loop: "{{ running_processes.stdout_lines }}"
+      when: running_processes.stdout_lines | length > 0
+      register: kill_result
+      changed_when: kill_result.rc == 0
+
+    - name: 3. Запуск main.py в оперативной памяти в фоновом режиме
       shell: "nohup {{ project_root }}/agent-exporter/venv/bin/python3 -u {{ project_root }}/agent-exporter/src/main.py > /tmp/agent_monitoring.log 2>&1 &"
       async: 2592000
       poll: 0
       environment:
         VAULT_TOKEN: "{{ vault_root_token }}"
-        # Вытаскиваем IP удаленной VPS и порт прямо из инвентаря
         VAULT_ADDR: "http://{{ hostvars['vps-monitoring']['ansible_host'] }}:{{ hostvars['vps-monitoring']['vault_port'] }}"
         ORACLE_DB_HOST: "{{ oracle_db_host }}"
         ORACLE_DB_PORT: "{{ oracle_db_port }}"
         ORACLE_DB_SERVICE_NAME: "{{ oracle_db_service_name }}"
         PUSHGATEWAY_ADDR: "{{ hostvars['vps-monitoring']['ansible_host'] }}:9091"
+        LD_LIBRARY_PATH: "{{ ansible_env.HOME }}/.local/lib/oracle/usr/lib/oracle/11.2/client64/lib"

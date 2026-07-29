@@ -7,6 +7,15 @@ scrape_configs:
     static_configs:
       - targets: ['pushgateway:9091']
 
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
 remote_write:
   - url: '${grafana_cloud_url}'
     basic_auth:
