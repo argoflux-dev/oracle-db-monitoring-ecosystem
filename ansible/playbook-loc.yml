@@ -86,9 +86,9 @@
       poll: 0
       environment:
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_ADDR: "http://{{ hostvars['vps-monitoring']['ansible_host'] }}:{{ hostvars['vps-monitoring']['vault_port'] }}"
+        VAULT_ADDR: "http://127.0.0.1:{{ vault_local_port }}"
         ORACLE_DB_HOST: "{{ oracle_db_host }}"
         ORACLE_DB_PORT: "{{ oracle_db_port }}"
         ORACLE_DB_SERVICE_NAME: "{{ oracle_db_service_name }}"
-        PUSHGATEWAY_ADDR: "{{ hostvars['vps-monitoring']['ansible_host'] }}:9091"
+        PUSHGATEWAY_ADDR: "127.0.0.1:{{ pushgateway_local_port }}"
         LD_LIBRARY_PATH: "{{ ansible_env.HOME }}/.local/lib/oracle/usr/lib/oracle/11.2/client64/lib"
