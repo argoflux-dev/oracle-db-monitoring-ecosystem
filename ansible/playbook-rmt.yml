@@ -85,3 +85,4 @@
             password: "{{ db_password }}"
             dsn: "{{ oracle_db_host }}:{{ oracle_db_port }}/{{ oracle_db_service_name }}"
         status_code: [200, 204]
+      no_log: true

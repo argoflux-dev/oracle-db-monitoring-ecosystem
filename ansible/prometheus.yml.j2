@@ -15,9 +15,3 @@ alerting:
     - static_configs:
         - targets:
             - "alertmanager:9093"
-
-remote_write:
-  - url: '${grafana_cloud_url}'
-    basic_auth:
-      username: '${grafana_cloud_user}'
-      password: '${grafana_cloud_token}'

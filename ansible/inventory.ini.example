@@ -1,0 +1,9 @@
+[vps]
+vps-monitoring ansible_host=<VPS_IP>
+
+[vps:vars]
+vault_port=<Hashicorp Vault Port>
+pushgateway_port=<Pushgateway Port>
+
+[localhost]
+127.0.0.1 ansible_connection=local

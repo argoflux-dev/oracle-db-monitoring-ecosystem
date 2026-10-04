@@ -5,6 +5,19 @@
   vars_files:
     - credentials.yml
 
+  vars:
+    vps_host: "{{ hostvars['vps-monitoring']['ansible_host'] }}"
+    vps_ssh_user: ansible
+    vps_ssh_key: "{{ ansible_env.HOME }}/.ssh/MadMax2Quasar_ed"
+ 
+    # Ports on VPS (from inventory.ini)
+    vault_remote_port: "{{ hostvars['vps-monitoring']['vault_port'] }}"
+    pushgateway_remote_port: "{{ hostvars['vps-monitoring']['pushgateway_port'] }}"
+ 
+    # Ports on local PC, tunnel hearing loopback only
+    vault_local_port: 8200
+    pushgateway_local_port: 9091
+
   tasks:
     - name: 1. Calculate the absolute path to the project root
       set_fact:
@@ -23,7 +36,51 @@
       register: kill_result
       changed_when: kill_result.rc == 0
 
-    - name: 3. Run main.py in RAM in the background
+    # ---------------- SSH-tunnel ----------------
+    - name: 3.1. Stop a previously started tunnel (if any)
+      # Brackets around `[s]sh` — so that `pkill` doesn't kill its own shell.
+      shell: "pkill -f '[s]sh.*-L 127.0.0.1:{{ vault_local_port }}:127.0.0.1:{{ vault_remote_port }}'"
+      register: tunnel_kill
+      failed_when: false
+      changed_when: tunnel_kill.rc == 0
+ 
+    - name: 3.2. Check whether autossh is installed (auto-reconnect)
+      shell: "command -v autossh"
+      register: autossh_check
+      failed_when: false
+      changed_when: false
+ 
+    - name: 3.3. Choose the tunnel binary
+      set_fact:
+        tunnel_bin: "{{ 'autossh -M 0' if autossh_check.rc == 0 else 'ssh' }}"
+ 
+    - name: 3.4. Open the SSH tunnel to the VPS in the background
+      shell: >-
+        {{ tunnel_bin }} -f -N
+        -o ExitOnForwardFailure=yes
+        -o ServerAliveInterval=15
+        -o ServerAliveCountMax=3
+        -o StrictHostKeyChecking=accept-new
+        -o BatchMode=yes
+        -i {{ vps_ssh_key }}
+        -L 127.0.0.1:{{ vault_local_port }}:127.0.0.1:{{ vault_remote_port }}
+        -L 127.0.0.1:{{ pushgateway_local_port }}:127.0.0.1:{{ pushgateway_remote_port }}
+        {{ vps_ssh_user }}@{{ vps_host }}
+      environment:
+        AUTOSSH_GATETIME: "0"   # don't give up if the first connection attempt fails
+      changed_when: true
+ 
+    - name: 3.5. Wait until the tunnelled ports are listening locally
+      wait_for:
+        host: 127.0.0.1
+        port: "{{ item }}"
+        timeout: 15
+      loop:
+        - "{{ vault_local_port }}"
+        - "{{ pushgateway_local_port }}"
+
+    # ---------------- Агент ----------------
+    - name: 4. Run main.py in RAM in the background
       shell: "nohup {{ project_root }}/agent-exporter/venv/bin/python3 -u {{ project_root }}/agent-exporter/src/main.py > /tmp/agent_monitoring.log 2>&1 &"
       async: 2592000
       poll: 0

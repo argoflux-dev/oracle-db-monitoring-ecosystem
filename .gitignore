@@ -13,3 +13,5 @@ venv/
 # Exclude Ansible configuration files that may contain local paths
 .ansible_cache/
 .ansible_vault_pass
+
+ansible/inventory.ini
