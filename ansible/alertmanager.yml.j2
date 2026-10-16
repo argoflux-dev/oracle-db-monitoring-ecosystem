@@ -17,7 +17,7 @@ route:
 receivers:
 - name: 'email-alerts'
   email_configs:
-  - to: 'angorec@list.ru'
+  - to: 'incleads@mail.ru'
     html: |
       {% raw %}<h3>🚨 [ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</h3>
       <b>Важность:</b> {{ .CommonLabels.severity }}<br><br>
