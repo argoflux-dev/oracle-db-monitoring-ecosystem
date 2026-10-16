@@ -7,22 +7,38 @@ global:
   smtp_auth_password: '{{ vault_secrets.smtp_password }}'
   smtp_require_tls: true
 
+time_intervals:
+  - name: night-shift
+    time_intervals:
+      - times:
+          - start_time: '20:00'
+            end_time: '24:00'
+        location: 'Europe/Moscow'
+      - times:
+          - start_time: '00:00'
+            end_time: '08:00'
+        location: 'Europe/Moscow'
+
 route:
+  receiver: 'email-alerts'
   group_by: ['alertname']
   group_wait: 10s
   group_interval: 10s
   repeat_interval: 1h
-  receiver: 'email-alerts'
+  routes:
+    - receiver: 'email-alerts'
+      active_time_intervals:
+        - night-shift
 
 receivers:
-- name: 'email-alerts'
-  email_configs:
-  - to: 'incleads@mail.ru'
-    html: |
-      {% raw %}<h3>🚨 [ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</h3>
-      <b>Важность:</b> {{ .CommonLabels.severity }}<br><br>
-      {{ range .Alerts }}
-      📌 <b>Суть:</b> {{ .Annotations.summary }}<br>
-      📝 <b>Детали:</b> {{ .Annotations.description }}<br>
-      ⏳ <b>Старт:</b> {{ .StartsAt.Format "15:04:05 02-01-2006" }}<br>
-      {{ end }}{% endraw %}
+  - name: 'email-alerts'
+    email_configs:
+      - to: 'incleads@mail.ru, angorec1@gmail.com'
+        html: |
+          {% raw %}<h3>🚨 [ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</h3>
+          <b>Важность:</b> {{ .CommonLabels.severity }}<br><br>
+          {{ range .Alerts }}
+          📌 <b>Суть:</b> {{ .Annotations.summary }}<br>
+          📝 <b>Детали:</b> {{ .Annotations.description }}<br>
+          ⏳ <b>Старт:</b> {{ .StartsAt.Format "15:04:05 02-01-2006" }}<br>
+          {{ end }}{% endraw %}
