@@ -57,7 +57,7 @@ Grafana (port 3000) is intentionally published to be reachable from any device a
 **On the local machine** (the one running the Python agent and `playbook-loc.yml`):
 
 * Python virtual environment in `agent-exporter/venv` with `requirements.txt` installed, plus Oracle Instant Client.
-* An SSH key for the VPS service user (`~/.ssh/MadMax2Quasar_ed`). The tunnel starts in non-interactive mode (`BatchMode=yes`), so a key protected by a passphrase must be loaded into `ssh-agent` first: `ssh-add ~/.ssh/MadMax2Quasar_ed`.
+* An SSH key for the VPS service user (`~/.ssh/LocalVM2VPS`). The tunnel starts in non-interactive mode (`BatchMode=yes`), so a key protected by a passphrase must be loaded into `ssh-agent` first: `ssh-add ~/.ssh/LocalVM2VPS`.
 * **`autossh` (recommended)** – keeps the SSH tunnel alive and reconnects it automatically. Without it the playbook falls back to plain `ssh`, and the tunnel will not recover after a network drop.
 
 ```bash
@@ -95,19 +95,30 @@ vault_root_token: "your_vault_token"
 db_username: "your_oracle_user"
 db_password: "your_oracle_password"
 oracle_db_host: "your_db_ip"
-oracle_db_port: 1521
+oracle_db_port: "your_db_port"
 oracle_db_service_name: "your_service_name"
 smtp_password: "your_mail_ru_app_specific_password"
 ```
 
-### 2. Deploy Telemetry Circuit to VPS
+### 2. Bootstrap the VPS
+Run the bootstrap playbook **once on a fresh VPS**, before the first deployment. It installs Docker and Docker Compose, creates the `ansible` service user (member of the `docker` group), adds your public SSH key to it and revokes the passwordless `sudo` of the initial user.
+
+The playbook connects as the initial sudo user of the VPS (`oleg` by default). If your VPS uses a different name, pass it with `-e`, which takes precedence over the playbook variables. The public key `~/.ssh/LocalVM2VPS.pub` must exist locally, and the key itself must already be authorized for the initial user (e.g. `ssh-copy-id -i ~/.ssh/LocalVM2VPS.pub <initial_sudo_user>@<VPS_IP>`).
+
+```bash
+ansible-playbook -i inventory.ini bootstrap.yml -e ansible_user=<initial_sudo_user>
+```
+
+If `sudo` of the initial user asks for a password, add `-K`. After the run, check that you can log in as the service user: `ssh -i ~/.ssh/LocalVM2VPS ansible@<VPS_IP>`.
+
+### 3. Deploy Telemetry Circuit to VPS
 Run the remote playbook from the `ansible` folder to clone the repository on the VPS, generate configurations from Jinja2 templates, and spin up the Docker infrastructure:
 
 ```bash
 ansible-playbook -i inventory.ini playbook-rmt.yml --ask-vault-pass
 ```
 
-### 3. Launch Local Metrics Exporter Agent
+### 4. Launch Local Metrics Exporter Agent
 Run the local playbook. It will:
 1. terminate any previously hung monitoring agents and old tunnels;
 2. open the SSH tunnel to the VPS (Vault `127.0.0.1:8200`, Pushgateway `127.0.0.1:9091`) using `autossh` if available;
@@ -120,7 +131,7 @@ ansible-playbook -i inventory.ini playbook-loc.yml
 
 The agent log is written to `/tmp/agent_monitoring.log`.
 
-### 4. Verify
+### 5. Verify
 * Grafana: `http://<VPS_IP>:3000`
 * From any external machine, the protected ports must be closed or filtered:
 
