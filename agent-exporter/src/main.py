@@ -96,7 +96,7 @@ def main():
         registry=registry
     )
     
-    # Получаем адрес Pushgateway на VPS (например, VPS_IP:9091)
+    # Получаем адрес Pushgateway на VPS
     pushgateway_addr = os.getenv("PUSHGATEWAY_ADDR")
     if not pushgateway_addr:
         print("[CRITICAL] PUSHGATEWAY_ADDR environment variable is missing!")

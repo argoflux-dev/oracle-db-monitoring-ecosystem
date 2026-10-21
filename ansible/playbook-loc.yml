@@ -8,7 +8,7 @@
   vars:
     vps_host: "{{ hostvars['vps-monitoring']['ansible_host'] }}"
     vps_ssh_user: ansible
-    vps_ssh_key: "{{ ansible_env.HOME }}/.ssh/MadMax2Quasar_ed"
+    vps_ssh_key: "{{ ansible_env.HOME }}/.ssh/MadMax2Argo_ed"
  
     # Ports on VPS (from inventory.ini)
     vault_remote_port: "{{ hostvars['vps-monitoring']['vault_port'] }}"

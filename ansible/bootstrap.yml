@@ -4,7 +4,7 @@
   become: true
   vars:
     ansible_user: oleg
-    ansible_ssh_private_key_file: "~/.ssh/MadMax2Quasar_ed"
+    ansible_ssh_private_key_file: "~/.ssh/MadMax2Argo_ed"
 
   tasks:
     - name: "1. ТОТАЛЬНАЯ ЗАЧИСТКА: Удаление старых ошибочных репозиториев"
@@ -85,7 +85,7 @@
       authorized_key:
         user: ansible
         state: present
-        key: "{{ lookup('file', '~/.ssh/MadMax2Quasar_ed.pub') }}"
+        key: "{{ lookup('file', '~/.ssh/MadMax2Argo_ed.pub') }}"
 
     - name: "13. ЛИКВИДАЦИЯ: Отзыв беспарольных прав sudo у пользователя oleg"
       file:
