@@ -57,7 +57,8 @@ Grafana (port 3000) is intentionally published to be reachable from any device a
 **On the local machine** (the one running the Python agent and `playbook-loc.yml`):
 
 * Python virtual environment in `agent-exporter/venv` with `requirements.txt` installed, plus Oracle Instant Client.
-* An SSH key for the VPS service user (`~/.ssh/LocalVM2VPS`). The tunnel starts in non-interactive mode (`BatchMode=yes`), so a key protected by a passphrase must be loaded into `ssh-agent` first: `ssh-add ~/.ssh/LocalVM2VPS`.
+* An SSH key for the VPS service user (`~/.ssh/<your_key>`). The tunnel starts in non-interactive mode (`BatchMode=yes`), so a key protected by a passphrase must be loaded into `ssh-agent` first: `ssh-add ~/.ssh/<your_key>`.
+> Replace `<your_key>` with the file name of your SSH key and set the same name in the playbooks: `ansible_ssh_private_key_file` and the `lookup('file', ...)` line in `bootstrap.yml`, `ansible_ssh_private_key_file` in `playbook-rmt.yml`, `vps_ssh_key` in `playbook-loc.yml`.
 * **`autossh` (recommended)** – keeps the SSH tunnel alive and reconnects it automatically. Without it the playbook falls back to plain `ssh`, and the tunnel will not recover after a network drop.
 
 ```bash
@@ -97,19 +98,21 @@ db_password: "your_oracle_password"
 oracle_db_host: "your_db_ip"
 oracle_db_port: "your_db_port"
 oracle_db_service_name: "your_service_name"
+smtp_username: "your_smtp_login"
 smtp_password: "your_mail_ru_app_specific_password"
+alert_recipients: ["you@example.com"]
 ```
 
 ### 2. Bootstrap the VPS
 Run the bootstrap playbook **once on a fresh VPS**, before the first deployment. It installs Docker and Docker Compose, creates the `ansible` service user (member of the `docker` group), adds your public SSH key to it and revokes the passwordless `sudo` of the initial user.
 
-The playbook connects as the initial sudo user of the VPS (`oleg` by default). If your VPS uses a different name, pass it with `-e`, which takes precedence over the playbook variables. The public key `~/.ssh/LocalVM2VPS.pub` must exist locally, and the key itself must already be authorized for the initial user (e.g. `ssh-copy-id -i ~/.ssh/LocalVM2VPS.pub <initial_sudo_user>@<VPS_IP>`).
+The playbook connects as the initial sudo user of the VPS (`oleg` by default). If your VPS uses a different name, pass it with `-e`, which takes precedence over the playbook variables. The public key `~/.ssh/<your_key>.pub` must exist locally, and the key itself must already be authorized for the initial user (e.g. `ssh-copy-id -i ~/.ssh/<your_key>.pub <initial_sudo_user>@<VPS_IP>`).
 
 ```bash
 ansible-playbook -i inventory.ini bootstrap.yml -e ansible_user=<initial_sudo_user>
 ```
 
-If `sudo` of the initial user asks for a password, add `-K`. After the run, check that you can log in as the service user: `ssh -i ~/.ssh/LocalVM2VPS ansible@<VPS_IP>`.
+If `sudo` of the initial user asks for a password, add `-K`. After the run, check that you can log in as the service user: `ssh -i ~/.ssh/<your_key> ansible@<VPS_IP>`.
 
 ### 3. Deploy Telemetry Circuit to VPS
 Run the remote playbook from the `ansible` folder to clone the repository on the VPS, generate configurations from Jinja2 templates, and spin up the Docker infrastructure:

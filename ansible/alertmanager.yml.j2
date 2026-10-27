@@ -1,9 +1,9 @@
 global:
   resolve_timeout: 5m
-  # Настройки SMTP-сервера
+  # SMTP server settings
   smtp_smarthost: 'smtp.mail.ru:587'
-  smtp_from: 'incleads@mail.ru'
-  smtp_auth_username: 'incleads@mail.ru'
+  smtp_from: '{{ vault_secrets.smtp_username }}'
+  smtp_auth_username: '{{ vault_secrets.smtp_username }}'
   smtp_auth_password: '{{ vault_secrets.smtp_password }}'
   smtp_require_tls: true
 
@@ -33,7 +33,7 @@ route:
 receivers:
   - name: 'email-alerts'
     email_configs:
-      - to: 'incleads@mail.ru, angorec1@gmail.com'
+      - to: '{{ vault_secrets.alert_recipients | join(", ") }}'
         html: |
           {% raw %}<h3>🚨 [ОБНАРУЖЕН АЛЕРТ] {{ .CommonLabels.alertname }}</h3>
           <b>Важность:</b> {{ .CommonLabels.severity }}<br><br>
